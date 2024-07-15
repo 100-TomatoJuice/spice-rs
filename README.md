@@ -1,4 +1,6 @@
 # Spice-rs
+[![CI](https://github.com/100-TomatoJuice/spice-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/100-TomatoJuice/spice-rs/actions/workflows/ci.yml)
+
 Simulation Program with Integrated Circuit Emphasis (SPICE) made in Rust!
 
 > [!Caution]
