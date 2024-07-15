@@ -1,10 +1,7 @@
 use nalgebra::Complex;
 use petgraph::graph::NodeIndex;
 
-use super::{Element, Terminal};
-
-// f16 epsilon
-const DEFAULT_DC_SOURCE_RESISTANCE: f32 = 9.7656E-4_f32;
+use super::{Element, Terminal, MIN_RESISTANCE};
 
 #[derive(Default, Clone)]
 pub struct DCVoltageSource {
@@ -21,7 +18,7 @@ impl DCVoltageSource {
                 Terminal::new(positive_node, super::Polarity::Positive),
                 Terminal::new(negative_node, super::Polarity::Negative),
             ],
-            resistance: DEFAULT_DC_SOURCE_RESISTANCE,
+            resistance: MIN_RESISTANCE,
         }
     }
 
@@ -57,7 +54,7 @@ impl Element for DCVoltageSource {
         self.resistance
     }
 
-    fn impedance(&self) -> Complex<f32> {
+    fn impedance(&self, _frequency: f32) -> Complex<f32> {
         Complex::ZERO
     }
 }

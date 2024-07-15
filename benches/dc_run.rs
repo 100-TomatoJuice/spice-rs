@@ -1,13 +1,13 @@
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use petgraph::graph::UnGraph;
 use spice_rs::{
     elements::{
         dc_current_source::DCCurrentSource, dc_voltage_source::DCVoltageSource, resistor::Resistor,
         Element,
     },
-    runners::dc::dc_run,
+    runners::dc_op::dc_op,
     Circuit,
 };
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use petgraph::graph::UnGraph;
 
 fn criterion_benchmark(c: &mut Criterion) {
     let mut graph = Circuit(UnGraph::<bool, Box<dyn Element>>::new_undirected());
@@ -22,7 +22,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     graph.add_edge(v2, v3, Box::new(Resistor::new(2.0, v2, v3)));
     graph.add_edge(v3, v4, Box::new(DCCurrentSource::new(3.0, v3, v4)));
 
-    c.bench_function("dc_run", |b| b.iter(|| dc_run(black_box(&graph))));
+    c.bench_function("dc_run", |b| b.iter(|| dc_op(black_box(&graph))));
 }
 
 criterion_group!(benches, criterion_benchmark);

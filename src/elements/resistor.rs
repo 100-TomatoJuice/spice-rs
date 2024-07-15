@@ -46,7 +46,9 @@ impl Element for Resistor {
         self.resistance
     }
 
-    fn impedance(&self) -> Complex<f32> {
-        Complex::ZERO
+    /// The rectangular impedence of a resistor is equal to `R + j0`,
+    /// where `R` is the resistance in Ohms.
+    fn impedance(&self, _frequency: f32) -> Complex<f32> {
+        Complex::new(self.resistance, 0.0)
     }
 }

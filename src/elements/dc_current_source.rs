@@ -54,7 +54,7 @@ impl Element for DCCurrentSource {
         self.resistance
     }
 
-    fn impedance(&self) -> Complex<f32> {
+    fn impedance(&self, _frequency: f32) -> Complex<f32> {
         Complex::ZERO
     }
 }

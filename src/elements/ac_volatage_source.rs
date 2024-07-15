@@ -10,7 +10,7 @@ const DEFAULT_AC_SOURCE_RESISTANCE: Complex<f32> = Complex::new(9.7656E-4_f32, 0
 pub struct AcVoltageSource {
     voltage: Complex<f32>,
     terminals: [Terminal; 2],
-    inductance: Complex<f32>,
+    impedance: Complex<f32>,
 }
 
 impl AcVoltageSource {
@@ -21,13 +21,13 @@ impl AcVoltageSource {
                 Terminal::new(positive_node, super::Polarity::Positive),
                 Terminal::new(negative_node, super::Polarity::Negative),
             ],
-            inductance: DEFAULT_AC_SOURCE_RESISTANCE,
+            impedance: DEFAULT_AC_SOURCE_RESISTANCE,
         }
     }
 
     #[must_use]
-    pub fn with_inductance(mut self, inductance: Complex<f32>) -> Self {
-        self.inductance = inductance;
+    pub fn with_impedance(mut self, impedance: Complex<f32>) -> Self {
+        self.impedance = impedance;
         self
     }
 }
@@ -57,7 +57,7 @@ impl Element for AcVoltageSource {
         0.0
     }
 
-    fn impedance(&self) -> Complex<f32> {
-        self.inductance
+    fn impedance(&self, _frequency: f32) -> Complex<f32> {
+        self.impedance
     }
 }
