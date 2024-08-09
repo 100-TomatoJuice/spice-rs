@@ -1,22 +1,30 @@
 use nalgebra::Complex;
-use petgraph::graph::NodeIndex;
 
-use super::{Element, Terminal, MIN_RESISTANCE};
+use crate::NodeId;
 
-#[derive(Default, Clone)]
+use super::{dc_voltage_source::DCVoltageSource, Element, Terminal};
+
+#[derive(Clone, Copy)]
 pub struct Inductor {
     inductance: f32,
     terminals: [Terminal; 2],
+    index: usize,
 }
 
 impl Inductor {
-    pub fn new(inductance: f32, positive_node: NodeIndex, negative_node: NodeIndex) -> Self {
+    pub fn new(
+        inductance: f32,
+        positive_node: NodeId,
+        negative_node: NodeId,
+        index: usize,
+    ) -> Self {
         Self {
             inductance,
             terminals: [
                 Terminal::new(positive_node, super::Polarity::Positive),
                 Terminal::new(negative_node, super::Polarity::Negative),
             ],
+            index,
         }
     }
 }
@@ -24,6 +32,15 @@ impl Inductor {
 impl Element for Inductor {
     fn terminals(&self) -> &[Terminal] {
         &self.terminals
+    }
+
+    fn stamp(&self, a_matrix: &mut Vec<f32>, z_vector: &mut Vec<f32>, n: usize, m: usize) {
+        let nodes: Vec<NodeId> = self.terminals().iter().map(|x| x.node).collect();
+        DCVoltageSource::new(0.0, nodes[0], nodes[1], self.index).stamp(a_matrix, z_vector, n, m);
+    }
+
+    fn is_b_c_element(&self) -> bool {
+        true
     }
 
     fn dc_voltage(&self) -> f32 {
@@ -43,7 +60,7 @@ impl Element for Inductor {
     }
 
     fn resistance(&self) -> f32 {
-        MIN_RESISTANCE
+        0.0
     }
 
     /// The rectangular impedence of an inductor is equal to `0 + jωL`,
@@ -56,16 +73,15 @@ impl Element for Inductor {
 #[cfg(test)]
 mod tests {
     use nalgebra::Complex;
-    use petgraph::graph::NodeIndex;
 
-    use crate::elements::Element;
+    use crate::{elements::Element, NodeId};
 
     use super::Inductor;
 
     /// Test if the impedance for the inductor is correctly calculated.
     #[test]
     fn impedance() {
-        let inductor = Inductor::new(10.0, NodeIndex::new(0), NodeIndex::new(1));
+        let inductor = Inductor::new(10.0, NodeId(0), NodeId(1), 0);
         assert_eq!(
             inductor.impedance(1000.0),
             Complex::<f32>::new(0.0, 10000.0)

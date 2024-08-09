@@ -1,16 +1,17 @@
 use nalgebra::Complex;
-use petgraph::graph::NodeIndex;
+
+use crate::NodeId;
 
 use super::{Element, Terminal};
 
-#[derive(Default, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct Resistor {
     resistance: f32,
     terminals: [Terminal; 2],
 }
 
 impl Resistor {
-    pub fn new(resistance: f32, node1: NodeIndex, node2: NodeIndex) -> Self {
+    pub fn new(resistance: f32, node1: NodeId, node2: NodeId) -> Self {
         Self {
             resistance,
             terminals: [
@@ -24,6 +25,33 @@ impl Resistor {
 impl Element for Resistor {
     fn terminals(&self) -> &[Terminal] {
         &self.terminals
+    }
+
+    /// Stamps itself onto the G matrix, which is apart of the A matrix.
+    fn stamp(&self, a_matrix: &mut Vec<f32>, _z_vector: &mut Vec<f32>, n: usize, m: usize) {
+        let node_1 = self.terminals()[0].node.0;
+        let node_2 = self.terminals()[1].node.0;
+
+        match (node_1 > 0, node_2 > 0) {
+            // Neither node is ground
+            (true, true) => {
+                a_matrix[(node_1 - 1) * (n + m)] += self.conductance();
+                a_matrix[(node_2 - 1) + (node_1 - 1) * (n - 1 + m)] -= self.conductance();
+
+                a_matrix[(node_2 - 1) * (n + m)] += self.conductance();
+                a_matrix[(node_1 - 1) + (node_2 - 1) * (n - 1 + m)] -= self.conductance();
+            }
+            // Only node 2 is ground
+            (true, false) => {
+                a_matrix[(node_1 - 1) * (n + m)] += self.conductance();
+            }
+            // Only node 1 is ground
+            (false, true) => {
+                a_matrix[(node_2 - 1) * (n + m)] += self.conductance();
+            }
+            // Both nodes are ground
+            _ => (),
+        }
     }
 
     fn dc_voltage(&self) -> f32 {

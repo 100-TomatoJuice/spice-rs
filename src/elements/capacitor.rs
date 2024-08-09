@@ -1,16 +1,17 @@
 use nalgebra::Complex;
-use petgraph::graph::NodeIndex;
 
-use super::{Element, Terminal};
+use crate::NodeId;
 
-#[derive(Default, Clone)]
+use super::{resistor::Resistor, Element, Terminal};
+
+#[derive(Clone, Copy)]
 pub struct Capacitor {
     capacitance: f32,
     terminals: [Terminal; 2],
 }
 
 impl Capacitor {
-    pub fn new(capacitance: f32, positive_node: NodeIndex, negative_node: NodeIndex) -> Self {
+    pub fn new(capacitance: f32, positive_node: NodeId, negative_node: NodeId) -> Self {
         Self {
             capacitance,
             terminals: [
@@ -24,6 +25,11 @@ impl Capacitor {
 impl Element for Capacitor {
     fn terminals(&self) -> &[Terminal] {
         &self.terminals
+    }
+
+    fn stamp(&self, a_matrix: &mut Vec<f32>, z_vector: &mut Vec<f32>, n: usize, m: usize) {
+        let nodes: Vec<NodeId> = self.terminals().iter().map(|x| x.node).collect();
+        Resistor::new(f32::MAX, nodes[0], nodes[1]).stamp(a_matrix, z_vector, n, m);
     }
 
     fn dc_voltage(&self) -> f32 {
@@ -56,16 +62,15 @@ impl Element for Capacitor {
 #[cfg(test)]
 mod tests {
     use nalgebra::Complex;
-    use petgraph::graph::NodeIndex;
 
-    use crate::elements::Element;
+    use crate::{elements::Element, NodeId};
 
     use super::Capacitor;
 
     /// Test if the impedance for the capacitor is correctly calculated.
     #[test]
     fn impedance() {
-        let capacitor = Capacitor::new(10.0, NodeIndex::new(0), NodeIndex::new(1));
+        let capacitor = Capacitor::new(10.0, NodeId(0), NodeId(1));
         assert_eq!(
             capacitor.impedance(1000.0),
             Complex::<f32>::new(0.0, -0.0001)
