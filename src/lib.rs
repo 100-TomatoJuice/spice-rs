@@ -5,8 +5,8 @@ pub mod runners;
 
 #[derive(Default)]
 pub struct Circuit {
-    nodes: Vec<NodeId>,
-    elements: Vec<Box<dyn Element>>,
+    pub nodes: Vec<NodeId>,
+    pub elements: Vec<Box<dyn Element>>,
 }
 
 impl Circuit {
@@ -19,15 +19,15 @@ impl Circuit {
     ///
     /// let mut circuit = Circuit::default();
     ///
-    /// let ground = circuit.add_node();
-    /// let v1 = circuit.add_node();
-    /// let v2 = circuit.add_node();
+    /// let ground = circuit.push_node();
+    /// let v1 = circuit.push_node();
+    /// let v2 = circuit.push_node();
     ///
     /// assert_eq!(ground.0, 0);
     /// assert_eq!(v1.0, 1);
     /// assert_eq!(v2.0, 2);
     /// ```
-    pub fn add_node(&mut self) -> NodeId {
+    pub fn push_node(&mut self) -> NodeId {
         let next_node = NodeId(self.nodes.len());
         self.nodes.push(next_node);
 
@@ -50,5 +50,5 @@ impl Circuit {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct NodeId(pub usize);

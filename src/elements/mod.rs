@@ -1,3 +1,6 @@
+use std::{any::Any, fmt::Debug};
+
+use dyn_clone::DynClone;
 use nalgebra::Complex;
 
 use crate::NodeId;
@@ -9,7 +12,7 @@ pub mod dc_voltage_source;
 pub mod inductor;
 pub mod resistor;
 
-#[derive(Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Polarity {
     Positive,
     #[default]
@@ -20,14 +23,13 @@ pub enum Polarity {
 impl Polarity {
     pub fn sign(&self) -> f32 {
         match self {
-            Self::Positive => 1.0,
-            Self::Neutral => 1.0,
+            Self::Positive | Self::Neutral => 1.0,
             Self::Negative => -1.0,
         }
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Terminal {
     pub node: NodeId,
     pub polarity: Polarity,
@@ -38,12 +40,24 @@ impl Terminal {
         Self { node, polarity }
     }
 
+    pub fn new_positive(node: NodeId) -> Self {
+        Self::new(node, Polarity::Positive)
+    }
+
+    pub fn new_neutral(node: NodeId) -> Self {
+        Self::new(node, Polarity::Neutral)
+    }
+
+    pub fn new_negative(node: NodeId) -> Self {
+        Self::new(node, Polarity::Negative)
+    }
+
     pub fn sign(&self) -> f32 {
         self.polarity.sign()
     }
 }
 
-pub trait Element {
+pub trait Element: Any + DynClone + Debug {
     fn terminals(&self) -> &[Terminal];
 
     /// "Stamp" the circuit elements' influence onto the
@@ -92,3 +106,5 @@ pub trait Element {
         impedance.inv()
     }
 }
+
+dyn_clone::clone_trait_object!(Element);

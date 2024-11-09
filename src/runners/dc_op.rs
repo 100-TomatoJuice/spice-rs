@@ -2,9 +2,15 @@ use nalgebra::{DMatrix, DVector, Dyn, VecStorage, Vector, U1};
 
 use crate::Circuit;
 
+use super::RunnerError;
+
 /// DC Operating Point to calculate the steady state of a circuit.
-pub fn dc_op(circuit: &Circuit) -> Vector<f32, Dyn, VecStorage<f32, Dyn, U1>> {
+pub fn dc_op(circuit: &Circuit) -> Result<Vector<f32, Dyn, VecStorage<f32, Dyn, U1>>, RunnerError> {
     let n = circuit.node_count();
+    if n == 0 {
+        return Err(RunnerError::ZeroNode);
+    }
+
     let m = circuit
         .elements()
         .iter()
@@ -23,7 +29,10 @@ pub fn dc_op(circuit: &Circuit) -> Vector<f32, Dyn, VecStorage<f32, Dyn, U1>> {
     let a_matrix = DMatrix::from_vec(z_size, z_size, a_matrix);
     let z_vector = DVector::from_vec(z_vector);
 
-    a_matrix.try_inverse().unwrap() * z_vector
+    a_matrix
+        .try_inverse()
+        .map(|a| a * z_vector)
+        .ok_or(RunnerError::MalformedCircuit)
 }
 
 #[cfg(test)]
@@ -35,7 +44,7 @@ mod tests {
             capacitor::Capacitor, dc_current_source::DCCurrentSource,
             dc_voltage_source::DCVoltageSource, inductor::Inductor, resistor::Resistor,
         },
-        runners::dc_op::dc_op,
+        runners::{dc_op::dc_op, RunnerError},
         Circuit,
     };
 
@@ -43,12 +52,12 @@ mod tests {
     #[test]
     fn voltage_source() {
         let mut circuit = Circuit::default();
-        let v0 = circuit.add_node();
-        let v1 = circuit.add_node();
+        let v0 = circuit.push_node();
+        let v1 = circuit.push_node();
         circuit.add_element(Box::new(Resistor::new(2.0, v1, v0)));
         circuit.add_element(Box::new(DCVoltageSource::new(10.0, v1, v0, 0)));
 
-        let matrix = dc_op(&circuit);
+        let matrix = dc_op(&circuit).unwrap();
 
         assert_eq!(matrix.len(), 2);
         assert_relative_eq!(matrix[0], 10.0, epsilon = 0.01); // v1
@@ -59,12 +68,12 @@ mod tests {
     #[test]
     fn current_source() {
         let mut circuit = Circuit::default();
-        let v0 = circuit.add_node();
-        let v1 = circuit.add_node();
+        let v0 = circuit.push_node();
+        let v1 = circuit.push_node();
         circuit.add_element(Box::new(Resistor::new(2.0, v1, v0)));
         circuit.add_element(Box::new(DCCurrentSource::new(10.0, v0, v1)));
 
-        let matrix = dc_op(&circuit);
+        let matrix = dc_op(&circuit).unwrap();
 
         assert_eq!(matrix.len(), 1);
         assert_relative_eq!(matrix[0], -20.0, epsilon = 0.01); // v1
@@ -74,16 +83,16 @@ mod tests {
     #[test]
     fn mixed_sources() {
         let mut circuit = Circuit::default();
-        let v0 = circuit.add_node();
-        let v1 = circuit.add_node();
-        let v2 = circuit.add_node();
+        let v0 = circuit.push_node();
+        let v1 = circuit.push_node();
+        let v2 = circuit.push_node();
         circuit.add_element(Box::new(DCVoltageSource::new(10.0, v1, v2, 0)));
         circuit.add_element(Box::new(Resistor::new(2.0, v1, v0)));
         circuit.add_element(Box::new(Resistor::new(4.0, v1, v2)));
         circuit.add_element(Box::new(Resistor::new(2.0, v2, v0)));
         circuit.add_element(Box::new(DCCurrentSource::new(3.0, v1, v0)));
 
-        let matrix = dc_op(&circuit);
+        let matrix = dc_op(&circuit).unwrap();
 
         assert_eq!(matrix.len(), 3);
         assert_relative_eq!(matrix[0], 8.0, epsilon = 0.01); // v1
@@ -95,14 +104,14 @@ mod tests {
     #[test]
     fn capacitor() {
         let mut circuit = Circuit::default();
-        let v0 = circuit.add_node();
-        let v1 = circuit.add_node();
-        let v2 = circuit.add_node();
+        let v0 = circuit.push_node();
+        let v1 = circuit.push_node();
+        let v2 = circuit.push_node();
         circuit.add_element(Box::new(DCVoltageSource::new(10.0, v1, v0, 0)));
         circuit.add_element(Box::new(Resistor::new(10.0, v1, v2)));
         circuit.add_element(Box::new(Capacitor::new(1.0, v2, v0)));
 
-        let matrix = dc_op(&circuit);
+        let matrix = dc_op(&circuit).unwrap();
 
         assert_eq!(matrix.len(), 3);
         assert_relative_eq!(matrix[0], 10.0, epsilon = 0.01); // v1
@@ -114,19 +123,35 @@ mod tests {
     #[test]
     fn inductor() {
         let mut circuit = Circuit::default();
-        let v0 = circuit.add_node();
-        let v1 = circuit.add_node();
-        let v2 = circuit.add_node();
+        let v0 = circuit.push_node();
+        let v1 = circuit.push_node();
+        let v2 = circuit.push_node();
         circuit.add_element(Box::new(DCVoltageSource::new(10.0, v1, v0, 0)));
         circuit.add_element(Box::new(Resistor::new(10.0, v1, v2)));
         circuit.add_element(Box::new(Inductor::new(1.0, v2, v0, 1)));
 
-        let matrix = dc_op(&circuit);
+        let matrix = dc_op(&circuit).unwrap();
 
         assert_eq!(matrix.len(), 4);
         assert_relative_eq!(matrix[0], 10.0, epsilon = 0.01); // v1
         assert_relative_eq!(matrix[1], 0.0, epsilon = 0.01); // v2
         assert_relative_eq!(matrix[2], -1.0, epsilon = 0.01); // i_v_source
         assert_relative_eq!(matrix[3], 1.0, epsilon = 0.01); // i_inductor
+    }
+
+    #[test]
+    fn zero_node_error() {
+        let circuit = Circuit::default();
+
+        assert_eq!(dc_op(&circuit), Err(RunnerError::ZeroNode));
+    }
+
+    #[test]
+    fn malformed_circuit_error() {
+        let mut circuit = Circuit::default();
+        let v0 = circuit.push_node();
+        circuit.add_element(Box::new(DCVoltageSource::new(10.0, v0, v0, 0)));
+
+        assert_eq!(dc_op(&circuit), Err(RunnerError::MalformedCircuit));
     }
 }

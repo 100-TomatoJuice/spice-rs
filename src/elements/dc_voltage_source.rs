@@ -4,7 +4,7 @@ use crate::NodeId;
 
 use super::{Element, Terminal};
 
-#[derive(Clone)]
+#[derive(Default, Debug, Clone, Copy)]
 pub struct DCVoltageSource {
     voltage: f32,
     terminals: [Terminal; 2],
@@ -39,6 +39,7 @@ impl Element for DCVoltageSource {
 
         let n = n - 1;
         match (node_1 > 0, node_2 > 0) {
+            // Not connected to ground
             (true, true) => {
                 // B matrix
                 a_matrix[(n + m) * (n + self.index) + node_1 - 1] += terminal_1.sign();
@@ -51,6 +52,7 @@ impl Element for DCVoltageSource {
                 // z vector
                 z_vector[n + self.index] = self.dc_voltage();
             }
+            // Only node 2 is connected to ground
             (true, false) => {
                 // B matrix
                 a_matrix[(n + m) * (n + self.index) + node_1 - 1] += terminal_1.sign();
@@ -61,6 +63,7 @@ impl Element for DCVoltageSource {
                 // z vector
                 z_vector[n + self.index] = self.dc_voltage();
             }
+            // Only node 1 is connected to ground
             (false, true) => {
                 // B matrix
                 a_matrix[(n + m) * (n + self.index) + node_2 - 1] += terminal_2.sign();

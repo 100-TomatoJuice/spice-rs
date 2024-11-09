@@ -4,7 +4,7 @@ use crate::NodeId;
 
 use super::{resistor::Resistor, Element, Terminal};
 
-#[derive(Clone, Copy)]
+#[derive(Default, Debug, Clone, Copy)]
 pub struct Capacitor {
     capacitance: f32,
     terminals: [Terminal; 2],

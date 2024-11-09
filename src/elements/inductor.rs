@@ -4,7 +4,7 @@ use crate::NodeId;
 
 use super::{dc_voltage_source::DCVoltageSource, Element, Terminal};
 
-#[derive(Clone, Copy)]
+#[derive(Default, Debug, Clone, Copy)]
 pub struct Inductor {
     inductance: f32,
     terminals: [Terminal; 2],

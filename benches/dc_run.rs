@@ -9,10 +9,10 @@ use spice_rs::{
 
 fn criterion_benchmark(c: &mut Criterion) {
     let mut graph = Circuit::default();
-    let v0 = graph.add_node();
-    let v1 = graph.add_node();
-    let v2 = graph.add_node();
-    let v3 = graph.add_node();
+    let v0 = graph.push_node();
+    let v1 = graph.push_node();
+    let v2 = graph.push_node();
+    let v3 = graph.push_node();
     graph.add_element(Box::new(Resistor::new(2.0, v1, v0)));
     graph.add_element(Box::new(Resistor::new(4.0, v1, v0)));
     graph.add_element(Box::new(DCVoltageSource::new(10.0, v2, v1, 0)));

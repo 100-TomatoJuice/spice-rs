@@ -4,7 +4,7 @@ use crate::NodeId;
 
 use super::{Element, Terminal};
 
-#[derive(Clone, Copy)]
+#[derive(Default, Debug, Clone, Copy)]
 pub struct ACVoltageSource {
     voltage: Complex<f32>,
     terminals: [Terminal; 2],
